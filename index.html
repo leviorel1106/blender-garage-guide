@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>בלנדר + AI · סצנה בתלת־ממד שהופכת לאמיתית</title>
+<meta name="description" content="איך Claude בונה סצנה בבלנדר וסידאנס 2.5 בקולבו הופך אותה לסרטון אמיתי, גם בלי לדעת תלת־ממד, עם כל הפרומפטים מוכנים להעתקה.">
+<meta property="og:title" content="בלנדר + AI · סצנה בתלת־ממד שהופכת לאמיתית">
+<meta property="og:description" content="איך Claude בונה סצנה בבלנדר וסידאנס 2.5 בקולבו הופך אותה לסרטון אמיתי, גם בלי לדעת תלת־ממד, עם כל הפרומפטים מוכנים להעתקה.">
+<meta property="og:image" content="media/hero.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#0c0d10; --bg2:#101114; --surface:#141619; --surface2:#1b1d21; --surface3:#24272c;
+  --ink:#f5f5f5; --ink2:#d3d6da; --muted:#b7bbc0; --line:#26282c; --line2:#3b3d40; --paper:#f2eee6; --on-paper:#111418;
+  --v1:#7a16e0; --v2:#a16cff; --cy:#2bd7d6; --amber:#F5C20C; --red:#B81418;
+  --grad:linear-gradient(97deg,#7a16e0,#008786);
+  --grad-text:linear-gradient(97deg,#a16cff,#2bd7d6);
+  --r:16px; --r-lg:24px;
+  --gut:max(18px,env(safe-area-inset-left,0px)); --gutr:max(18px,env(safe-area-inset-right,0px));
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Rubik,"Segoe UI",Arial,sans-serif;font-size:18px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:clip}
+img,video{max-width:100%;display:block}
+a{color:inherit}
+::selection{background:rgba(161,108,255,.45)}
+.atmo{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.atmo::before{content:"";position:absolute;width:90vmax;height:90vmax;top:-45vmax;right:-30vmax;background:radial-gradient(closest-side,rgba(122,22,224,.22),transparent 70%)}
+.atmo::after{content:"";position:absolute;width:70vmax;height:70vmax;bottom:-40vmax;left:-25vmax;background:radial-gradient(closest-side,rgba(0,135,134,.16),transparent 70%)}
+.wrap{max-width:1180px;margin-inline:auto;padding-left:var(--gut);padding-right:var(--gutr)}
+.narrow{max-width:820px}
+.grad-text{background:var(--grad-text);-webkit-background-clip:text;background-clip:text;color:transparent}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.eyebrow::before{content:"";width:26px;height:2px;background:var(--grad)}
+
+/* bar */
+.bar{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 82%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:62px}
+.me{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:700;font-size:15px}
+.me img{width:36px;height:36px;border-radius:50%;box-shadow:0 0 0 2px var(--v2)}
+.me small{display:block;font-weight:500;color:var(--muted);font-size:12px;line-height:1.2}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:0 26px;border-radius:999px;font:700 17px/1 Rubik,sans-serif;text-decoration:none;border:0;cursor:pointer;transition:transform .15s,box-shadow .2s}
+.btn:hover{transform:translateY(-2px)}
+.btn:focus-visible,.copy:focus-visible,.code:focus-visible{outline:3px solid var(--cy);outline-offset:3px}
+.btn-primary{background:var(--paper);color:var(--on-paper);box-shadow:0 14px 40px -12px rgba(242,238,230,.35)}
+.btn-grad{background:var(--grad);color:#fff;box-shadow:0 0 0 1px rgba(161,108,255,.35),0 18px 50px -12px rgba(122,22,224,.6)}
+.btn-ghost{background:transparent;color:var(--ink);box-shadow:0 0 0 1.5px var(--line2) inset}
+.bar .btn{min-height:42px;padding:0 18px;font-size:15px}
+
+/* hero */
+.hero{padding:clamp(34px,6vw,80px) 0 clamp(30px,5vw,60px)}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:clamp(28px,5vw,64px);align-items:center}
+h1{font-size:clamp(42px,7vw,86px);line-height:.95;font-weight:900;letter-spacing:-.03em;margin:18px 0 20px;text-wrap:balance}
+.lead{font-size:clamp(19px,2vw,22px);color:var(--ink2);max-width:40ch;margin:0 0 28px}
+.cta-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.phone{position:relative;justify-self:center;width:min(100%,340px);aspect-ratio:9/16;border-radius:34px;padding:10px;background:linear-gradient(160deg,#2a2c31,#0f1013);box-shadow:0 0 0 1px var(--line2),0 40px 90px -30px rgba(122,22,224,.55)}
+.phone video{width:100%;height:100%;object-fit:cover;border-radius:26px;background:#000}
+.phone .sound{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);min-height:40px;padding:0 16px;font-size:14px;background:rgba(12,13,16,.72);color:#fff;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.badge{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:var(--surface);box-shadow:0 0 0 1px var(--line2) inset;font-size:14px;color:var(--ink2);font-weight:500}
+.badge b{color:var(--ink)}
+
+/* sections */
+.sec{padding:clamp(56px,8vw,104px) 0 0}
+h2{font-size:clamp(32px,4.6vw,54px);line-height:1.02;font-weight:900;letter-spacing:-.025em;margin:14px 0 16px;text-wrap:balance}
+h3{font-size:clamp(22px,2.4vw,28px);line-height:1.15;font-weight:800;margin:0 0 10px}
+p{margin:0 0 16px}
+.muted{color:var(--muted)}
+.tldr{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:26px}
+.tldr div{padding:20px;border-radius:var(--r);background:var(--surface);box-shadow:0 0 0 1px var(--line) inset}
+.tldr b{display:block;font-size:30px;font-weight:900;line-height:1;margin-bottom:8px}
+.tldr span{color:var(--muted);font-size:15px;line-height:1.45;display:block}
+
+/* code strip (Kolbo offer) */
+.offer{margin-top:clamp(40px,6vw,64px);border-radius:var(--r-lg);padding:clamp(22px,3vw,34px);position:relative;overflow:hidden;
+  background:linear-gradient(120deg,rgba(122,22,224,.28),rgba(0,135,134,.2)),var(--surface);box-shadow:0 0 0 1px rgba(161,108,255,.35) inset}
+.offer .row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:18px}
+.offer h3{margin:0 0 4px}
+.codes{display:flex;flex-wrap:wrap;gap:10px}
+.code{display:inline-flex;align-items:center;justify-content:space-between;min-width:280px;gap:12px;text-align:left;min-height:52px;padding:0 8px 0 18px;border-radius:14px;border:0;cursor:pointer;background:var(--bg);color:var(--ink);box-shadow:0 0 0 1.5px var(--line2) inset;font:600 15px Rubik,sans-serif}
+.code b{font-family:"JetBrains Mono",monospace;font-size:17px;letter-spacing:.04em}
+.code i{font-style:normal;font-size:13px;color:var(--muted)}
+.code .pill{background:var(--paper);color:var(--on-paper);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700}
+.fine{font-size:14px;color:var(--muted);margin:14px 0 0}
+
+/* rules */
+.rules{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:26px}
+.rule{padding:24px;border-radius:var(--r-lg);background:var(--surface);box-shadow:0 0 0 1px var(--line) inset;position:relative;overflow:hidden}
+.rule .n{font-size:64px;font-weight:900;line-height:.9;margin-bottom:12px}
+.rule p{color:var(--ink2);font-size:16px;margin:0}
+
+/* steps */
+.step{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(20px,4vw,48px);align-items:start;padding:clamp(34px,5vw,56px) 0;border-top:1px solid var(--line)}
+.step:first-of-type{border-top:0}
+.step .num{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:14px;background:var(--grad);font-weight:900;font-size:19px;margin-bottom:14px}
+.tool{display:inline-flex;align-items:center;gap:8px;margin:0 0 14px;padding:6px 12px;border-radius:999px;font-size:13px;font-weight:700;letter-spacing:.04em;background:rgba(43,215,214,.1);color:var(--cy);box-shadow:0 0 0 1px rgba(43,215,214,.35) inset}
+.step ul{margin:0 0 16px;padding-left:20px;color:var(--ink2)}
+.step li{margin:0 0 6px}
+.shots{display:grid;gap:10px}
+.shots.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.shots.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.shots figure{margin:0}
+.shots img{width:100%;border-radius:14px;box-shadow:0 0 0 1px var(--line2)}
+.shots .tall img{aspect-ratio:9/16;object-fit:cover}
+.shots figcaption{font-size:14px;color:var(--muted);margin-top:6px;line-height:1.4}
+
+/* prompt */
+.prompt{position:relative;margin:14px 0 0;border-radius:var(--r);background:#08090b;box-shadow:0 0 0 1px var(--line2) inset;overflow:hidden}
+.prompt-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 10px 10px 16px;border-bottom:1px solid var(--line);background:var(--surface)}
+.prompt-h span{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.prompt pre{margin:0;padding:16px;max-height:300px;overflow:auto;white-space:pre-wrap;word-break:break-word;font:13.5px/1.6 "JetBrains Mono",monospace;color:#e6e7ea}
+.prompt.long pre{max-height:420px}
+.copy{min-height:40px;padding:0 16px;border-radius:999px;border:0;cursor:pointer;background:var(--paper);color:var(--on-paper);font:700 14px Rubik,sans-serif}
+.copy.done{background:var(--cy)}
+.note{margin-top:14px;padding:14px 16px;border-radius:14px;background:rgba(245,194,12,.08);box-shadow:0 0 0 1px rgba(245,194,12,.3) inset;font-size:15px;color:var(--ink2)}
+.note b{color:var(--amber)}
+
+/* mistakes */
+.miss{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:26px}
+.miss div{padding:22px;border-radius:var(--r-lg);background:var(--surface);box-shadow:0 0 0 1px var(--line) inset}
+.miss b{display:block;font-size:19px;margin-bottom:6px}
+.miss .x{color:#ff7a7a;font-weight:800}
+.miss .ok{color:var(--cy);font-weight:800}
+.miss p{margin:0 0 10px;font-size:16px;color:var(--ink2)}
+
+/* final */
+.final{margin:clamp(64px,9vw,120px) 0 0;padding:clamp(40px,6vw,72px) 0;background:radial-gradient(80% 90% at 50% 0%,rgba(122,22,224,.32),transparent 70%),var(--bg2);border-top:1px solid var(--line)}
+.final .wrap{text-align:center}
+.final h2{font-size:clamp(36px,5.4vw,66px)}
+.final .lead{margin-inline:auto;max-width:46ch}
+.final .codes{justify-content:center;margin:26px 0 8px}
+.steps3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:900px;margin:28px auto 0;text-align:left}
+.steps3 div{padding:18px;border-radius:var(--r);background:var(--surface);box-shadow:0 0 0 1px var(--line) inset;font-size:16px;color:var(--ink2)}
+.steps3 b{display:block;color:var(--ink);font-size:17px;margin-bottom:4px}
+footer{padding:34px 0 60px;color:var(--muted);font-size:14px}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:center}
+.toast{position:fixed;left:50%;bottom:max(24px,env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(120px);background:var(--paper);color:var(--on-paper);padding:12px 20px;border-radius:999px;font-weight:700;font-size:15px;transition:transform .25s;z-index:80}
+.toast.on{transform:translateX(-50%) translateY(0)}
+
+@media (max-width:900px){
+  .hero .wrap{grid-template-columns:minmax(0,1fr)}
+  .phone{width:min(78vw,320px)}
+  .tldr{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .rules,.miss,.steps3{grid-template-columns:minmax(0,1fr)}
+  .step{grid-template-columns:minmax(0,1fr)}
+  .bar .hide-s{display:none}
+}
+@media (prefers-reduced-motion:reduce){.btn:hover{transform:none}}
+
+html[dir=rtl] body{direction:rtl}
+.prompt pre{direction:rtl;text-align:right;unicode-bidi:plaintext;white-space:pre-wrap}
+.prompt.code pre{direction:ltr;text-align:left}
+.tool{direction:ltr;unicode-bidi:isolate}
+.phone{aspect-ratio:4/3;width:min(100%,520px);border-radius:24px}
+.phone video{border-radius:16px}
+.codes{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+.codes span{font-family:'JetBrains Mono',monospace;font-weight:600;padding:8px 14px;border-radius:12px;border:1px solid var(--line2);background:rgba(255,255,255,.04)}
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+.follow{padding:64px 0 72px;text-align:center}
+section.follow h2{margin:0 0 8px;text-align:center}
+section.follow p{text-align:center}
+.follow p{margin:0 auto 26px;max-width:46ch;color:var(--ink2,#b9b9c6)}
+.fgrid{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;max-width:760px;margin:0 auto}
+.fbtn{display:inline-flex;align-items:center;gap:12px;min-width:220px;padding:12px 18px 12px 12px;border-radius:18px;text-decoration:none;color:#fff;
+  background:rgba(255,255,255,.05);box-shadow:0 0 0 1px rgba(255,255,255,.12) inset;transition:transform .15s,box-shadow .15s;direction:ltr;text-align:left}
+.fbtn:hover{transform:translateY(-2px);box-shadow:0 0 0 1px rgba(255,255,255,.28) inset,0 10px 30px rgba(0,0,0,.35)}
+.fbtn .ic{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;font-size:22px;color:#fff;flex:none}
+.fbtn b{display:block;font:700 16px Rubik,sans-serif}
+.fbtn small{display:block;font:500 13px Rubik,sans-serif;color:rgba(255,255,255,.65)}
+.fbtn.instagram .ic{background:radial-gradient(circle at 30% 107%,#fdf497 0%,#fdf497 5%,#fd5949 45%,#d6249f 60%,#285AEB 90%)}
+.fbtn.tiktok .ic{background:#111;box-shadow:-2px -2px 0 #25F4EE inset,2px 2px 0 #FE2C55 inset}
+.fbtn.youtube .ic{background:#FF0000}
+.fbtn.facebook .ic{background:#1877F2}
+.fbtn.linkedin .ic{background:#0A66C2}
+.follow.light p{color:#5b5b66}
+.follow.light .fbtn{background:#fff;color:#111;box-shadow:0 0 0 1px rgba(0,0,0,.10) inset,0 4px 14px rgba(0,0,0,.06)}
+.follow.light .fbtn:hover{box-shadow:0 0 0 1px rgba(0,0,0,.18) inset,0 10px 26px rgba(0,0,0,.12)}
+.follow.light .fbtn small{color:rgba(0,0,0,.55)}
+</style>
+</head>
+<body>
+<div class="atmo"></div>
+<header class="bar"><div class="wrap">
+  <a class="me" href="https://www.instagram.com/leviorel/" target="_blank" rel="noopener"><img src="media/avatar.jpg" alt="אוראל לוי"><span>אוראל לוי<small>@leviorel · יוצר תוכן AI</small></span></a>
+  <a class="btn btn-primary" href="https://app.kolbo.ai?via=orellevi" target="_blank" rel="noopener">לקולבו</a>
+</div></header>
+
+<section class="hero"><div class="wrap">
+  <div>
+    <span class="eyebrow">מדריך חינמי · בלנדר + קולבו</span>
+    <h1>בונים סצנה בתלת־ממד,<br><span class="grad-text">ו-AI הופך אותה לאמיתית.</span></h1>
+    <p class="lead">Claude בונה את הסצנה בבלנדר, אתם קובעים בדיוק איפה המצלמה ומה קורה בכל שנייה, וסידאנס 2.5 בקולבו הופך את הבובות לאנשים אמיתיים. גם אם בחיים לא פתחתם תוכנת תלת־ממד. הנה כל השלבים, עם כל הפרומפטים.</p>
+    <div class="cta-row">
+      <a class="btn btn-grad" href="#steps">תראה לי איך</a>
+      <a class="btn btn-ghost" href="https://app.kolbo.ai?via=orellevi" target="_blank" rel="noopener">לקולבו</a>
+    </div>
+    <div class="badges"><span class="badge"><b>0</b> ידע בתלת־ממד</span><span class="badge"><b>5</b> פרומפטים מוכנים</span><span class="badge"><b>1</b> שיחה עם Claude</span></div>
+  </div>
+  <div class="phone">
+    <video id="ep" src="media/reel.mp4" poster="media/hero.jpg" autoplay muted loop playsinline preload="metadata"></video>
+    <button class="btn sound" id="snd" type="button">לחצו לסאונד</button>
+  </div>
+</div></section>
+
+<section class="sec"><div class="wrap">
+  <span class="eyebrow">בקצרה</span>
+  <h2>בלנדר מחליט, <span class="grad-text">ה-AI רק מלביש.</span></h2>
+  <p class="lead" style="max-width:60ch">כשנותנים ל-AI רק טקסט, הוא מנחש את המצלמה ואת התזמון. כשנותנים לו סרטון מבלנדר, הכול נשאר בדיוק במקום והוא רק הופך את זה לאמיתי.</p>
+  <div class="tldr"><div><b>01</b><span>מורידים בלנדר</span></div><div><b>02</b><span>מחברים אליו את Claude</span></div><div><b>03</b><span>מתארים מה קורה בכל שנייה</span></div><div><b>04</b><span>דפי דמות ומקום בקולבו</span></div><div><b>05</b><span>הכול לסידאנס 2.5</span></div></div>
+</div></section>
+
+<section class="sec"><div class="wrap">
+  <span class="eyebrow">לפני שמתחילים</span>
+  <h2>שלושה חוקים <span class="grad-text">שעשו את ההבדל.</span></h2>
+  <div class="rules"><div class="rule"><div class="n grad-text">1</div><h3>הבובות הן רק סימון</h3><p>בפרומפט כותבים שהבובות מסמנות רק איפה כל אחד עומד. אחרת האנשים בסרטון זזים נוקשים, כמו הבובות.</p></div><div class="rule"><div class="n grad-text">2</div><h3>השנייה בפרומפט היא השנייה בבלנדר</h3><p>אם בבלנדר המצלמה זזה ב-6.6, גם בפרומפט כותבים 6.6. מספר אחר מבלבל אותו.</p></div><div class="rule"><div class="n grad-text">3</div><h3>מסבירים מה כל קובץ</h3><p>לכל תמונה ולסרטון שורה משלהם: מה לקחת ממנו ומה לא. בלי זה הוא מערבב בין הדמויות.</p></div></div>
+</div></section>
+
+<section class="sec" id="steps"><div class="wrap">
+  <span class="eyebrow">צעד אחרי צעד</span>
+  <h2>כל התהליך, <span class="grad-text">מבלנדר ועד הסרטון.</span></h2>
+
+  <div class="step">
+    <div>
+      <span class="num">1</span><span class="tool">BLENDER · חינם</span><h3>מורידים בלנדר</h3>
+      <p>בלנדר היא תוכנת תלת־ממד חינמית. מורידים אותה מ<a href="https://www.blender.org/download/" target="_blank" rel="noopener">האתר הרשמי</a> ומתקינים כרגיל. לא צריך לדעת להשתמש בה, את כל העבודה בפנים Claude עושה.</p>
+    </div>
+    
+  </div>
+  <div class="step">
+    <div>
+      <span class="num">2</span><span class="tool">CLAUDE · חיבור</span><h3>מחברים את Claude לבלנדר</h3>
+      <p>החיבור נעשה עם <a href="https://github.com/ahujasid/blender-mcp" target="_blank" rel="noopener">BlenderMCP</a>, תוסף חינמי שנותן ל-Claude לבנות ולהזיז דברים בתוך בלנדר. הכי פשוט: מבקשים מ-Claude שיחבר את עצמו ויסביר לכם מה ללחוץ.</p><div class="prompt"><div class="prompt-h"><span>הפרומפט לחיבור</span><button class="copy" type="button" data-copy="p-connect">העתקה</button></div><pre id="p-connect">תחבר את עצמך לבלנדר דרך BlenderMCP (https://github.com/ahujasid/blender-mcp).
+1. תתקין את מה שצריך בצד שלך ותוסיף את השרת של blender-mcp להגדרות שלך.
+2. תסביר לי צעד אחרי צעד איך מתקינים את התוסף בתוך בלנדר ואיך לוחצים Connect.
+3. כשהחיבור עובד, תבדוק שאתה רואה את הסצנה שפתוחה אצלי ותגיד לי מה יש בה.</pre></div>
+    </div>
+    <div class="shots c1"><figure><img src="media/blender.jpg" alt="הסצנה בבלנדר" loading="lazy"><figcaption>ככה זה נראה בבלנדר אחרי ש-Claude בנה</figcaption></figure></div>
+  </div>
+  <div class="step">
+    <div>
+      <span class="num">3</span><span class="tool">CLAUDE · הסצנה</span><h3>מתארים את המקום ומה קורה בכל שנייה</h3>
+      <p>זה כל הסוד. Claude בונה את המקום מקופסאות ובובות, ואתם מחליטים בדיוק איפה המצלמה, מי עומד איפה ומה קורה בכל שנייה. ככה ה-AI לא צריך לנחש כלום. אחרי הרינדור צופים, מבקשים תיקונים במילים, ומרנדרים שוב עד שהתנועה נכונה.</p><div class="prompt long"><div class="prompt-h"><span>הפרומפט לבניית הסצנה</span><button class="copy" type="button" data-copy="p-scene">העתקה</button></div><pre id="p-scene">תבנה לי בבלנדר סצנה של 15 שניות, יחס 4:3, 30 פריימים לשנייה.
+
+המקום: מוסך קטן. רכב ספורט כתום מורם על ארבע חמורים אדומים, ומאחוריו רכב אדום. דלת גלילה פתוחה לרחוב. ארגז כלים אדום פתוח על הרצפה ליד הפגוש, וקרטון על הרצפה מתחת לרכב.
+
+רק צורות פשוטות: קופסאות לרכבים ולקירות, בובה אחת לבן אדם. כל דבר בצבע שונה, כדי שיהיה ברור מה זה מה.
+
+מה קורה בכל שנייה:
+0-0.7 המצלמה צמודה לרצפה ליד החמור הקדמי. הבן אדם שוכב על עגלת מכונאי מתחת לרכב, הידיים על הפגוש.
+0.7-2.3 הוא מתגלגל החוצה, והמצלמה גולשת לאחור יחד איתו ונעצרת מהצד.
+2.3-6.6 הוא מסובב את הראש למצלמה ומדבר. המצלמה כמעט לא זזה.
+6.6-7.3 הוא חוזר מתחת לרכב, רק הרגליים בחוץ. המצלמה מסתובבת מהר לחזית הרכב, נמוך.
+7.3-8.6 נמוך מול הרכב, דחיפה איטית פנימה.
+8.6-11.0 המצלמה עולה מהר לזווית גבוהה ליד הכנף הקדמית ומסתכלת למטה על הרגליים.
+11.0-12.6 יורדת שוב לחזית, נמוך.
+12.6-15.0 עולה למעלה, מבט ישר מלמעלה, ונעצרת.
+
+המצלמה היא זרוע רובוטית: כל מעבר הוא קשת חלקה עם עצירה קטנה בסוף, ואף פעם לא קאט.
+
+לפני שאתה מרנדר תבדוק ארבעה דברים: שהמצלמה לא עוברת דרך הרכב או דרך הבובה, שהרגליים של הבובה על הרצפה, שאף יד לא נכנסת לתוך הרכב, ושכל תנועת מצלמה גדולה לוקחת לפחות חצי שנייה.
+תרנדר עם Workbench לקובץ MP4 ותראה לי.</pre></div><div class="note"><b>טיפ:</b> צבע אחר לכל דמות ולכל רכב. אחר כך, בפרומפט לסידאנס, כותבים "הבובה הכחולה היא..." והוא יודע בדיוק מי זה מי.</div>
+    </div>
+    <div class="shots c2"><figure><img src="media/blockout.jpg" alt="הבובה על עגלת המכונאי בבלנדר" loading="lazy"><figcaption>בבלנדר</figcaption></figure><figure><img src="media/result1.jpg" alt="אותו רגע בסרטון האמיתי" loading="lazy"><figcaption>אותו רגע, בסרטון</figcaption></figure></div>
+  </div>
+  <div class="step">
+    <div>
+      <span class="num">4</span><span class="tool">KOLBO · דף דמות</span><h3>יוצרים דף דמות לכל אחד</h3>
+      <p>נכנסים ל<a href="https://app.kolbo.ai?via=orellevi" target="_blank" rel="noopener">קולבו</a>, בוחרים Nano Banana Pro בעריכת תמונה, מעלים תמונה אחת או שתיים של האדם ומדביקים את הפרומפט. יוצא דף אחד עם הדמות מכל הצדדים, הבגדים והפרטים. ככה הפנים והבגדים נשארים זהים בכל הסרטון. מחליפים בפרומפט רק את תיאור הבגדים.</p><div class="prompt long code"><div class="prompt-h"><span>הפרומפט לדף דמות</span><button class="copy" type="button" data-copy="p-sheet">העתקה</button></div><pre id="p-sheet">Character reference sheet of the exact woman from images 1 and 2: strictly the same face, eyes, brows, nose, lips, skin, long dark hair and age; do NOT change or beautify her face. Hair long, loose and natural. Wardrobe, identical in every view: a cropped pale-blue ribbed tank top with thin straps; loose olive-khaki cargo pants sitting low on the hips; small gold hoop earrings and one thin gold necklace; white low-top sneakers. Detail swatches: ribbed tank fabric, cargo pocket, hoop earring, sneaker, hair texture. Realistic photographic style, not illustrated or 3D rendered. Clean light grey seamless studio background, soft even daylight. Layout like a professional character design sheet, horizontal 4:3: on the left, four full-body views standing in a row at the same scale (front, right side, back, three-quarter turning toward camera); on the right, one large head-and-shoulders close-up looking into the lens; along the bottom, a strip of small detail swatches of the outfit (fabric texture, shoes, hair, accessories). Small plain labels under each view. Natural skin with visible pores and fine texture, no smoothing, no beauty filter. 35mm film look, fine grain. No other writing, no logos.</pre></div>
+    </div>
+    <div class="shots c1"><figure><img src="media/sheet_noa.jpg" alt="דף דמות של המגישה" loading="lazy"><figcaption>דף הדמות של המגישה</figcaption></figure></div>
+  </div>
+  <div class="step">
+    <div>
+      <span class="num">5</span><span class="tool">KOLBO · תמונת מקום</span><h3>תמונה אחת של המקום</h3>
+      <p>עוד תמונה אחת, של המקום בלי אנשים: האור, הצבעים, החומרים. היא לא קובעת איפה מה עומד, את זה קובע הסרטון מבלנדר. היא רק אומרת לסידאנס איך המקום אמור להיראות.</p><div class="prompt long code"><div class="prompt-h"><span>הפרומפט לתמונת המקום</span><button class="copy" type="button" data-copy="p-place">העתקה</button></div><pre id="p-place">A wide eye-level photo taken from inside a cramped Japanese drift garage in late-morning daylight, 4:3 framing, 24mm lens. The roll-up door on the left is fully open to a quiet residential Japanese street with two-storey houses and a utility pole with sagging wires, bright and slightly overexposed. Centre-right, a late-90s Nissan Silvia S15 coupe in glossy red-orange sits nose toward the door, raised on four red jack stands with its wheels just off the floor; a black rear wing, white headlights, a dark front grille and a black front lip. Behind it to the right, a red 180SX-style hatchback with gold katakana-style vinyl graphics, parked at an angle. The walls are unfinished OSB board on raw timber studs under exposed dark roof joists, hung with faded vinyl tuning banners in red, purple and black with invented stylised lettering, a pegboard of hand tools, red wall cabinets, metal shelving stacked with tyres and blue parts boxes, a leaning aluminium ladder. A red open toolbox with coloured tool handles, a blue socket rail and loose wrenches on the floor in front of the car, a flattened cardboard sheet on the floor under the front bumper. Smooth grey concrete with oil stains. Warm sun shafts through the door with drifting dust, cool fluorescent tubes as soft fill. No people. Neutral white balance, lifted blacks, gentle vignette, muted film-like fade, fine grain, sharp focus, authentic car-enthusiast photography.</pre></div>
+    </div>
+    <div class="shots c1"><figure><img src="media/place.jpg" alt="המוסך" loading="lazy"><figcaption>תמונת המקום</figcaption></figure></div>
+  </div>
+  <div class="step">
+    <div>
+      <span class="num">6</span><span class="tool">KOLBO · Seedance 2.5</span><h3>מעלים הכול לסידאנס ומסבירים מה כל תמונה</h3>
+      <p>בקולבו בוחרים Seedance 2.5 במצב Elements. מעלים את הסרטון מבלנדר, את דפי הדמות ואת תמונת המקום, ובפרומפט כותבים מה כל קובץ: הסרטון קובע את המצלמה והתזמון, דף הדמות קובע את הפנים והבגדים, ותמונת המקום את המראה. ואז שנייה אחרי שנייה, בדיוק לפי בלנדר.</p><div class="note"><b>כדי לא לבזבז קרדיטים:</b> מריצים קודם טיוטה ב-480p. רק כשהיא נראית נכון מעבירים את אותה טיוטה ל-Full Quality.</div><div class="prompt long code"><div class="prompt-h"><span>הפרומפט לסידאנס (השוט של המכונאי)</span><button class="copy" type="button" data-copy="p-seedance">העתקה</button></div><pre id="p-seedance">IMAGE / VIDEO REFERENCE MAP
+- Video 1 (blockout, 15s) → motion and staging reference: character position, car placement, camera positions and the timing of every angle change. Follow its intent, not its exact keyframes. All movement is smoothed into continuous, physically plausible motion. The block mannequin is the mechanic; the orange block car is the coupe; the red block car is the hatchback.
+- Image 1 (character sheet) → the mechanic: the exact man in the sheet, same face, beard and short dark hair; heather-grey tee with white raglan side panels, light-wash baggy denim shorts with frayed hems, keys on the belt loop, white crew socks, chunky white retro sneakers, silver watch, grease smudges on the forearms. Never render the sheet itself, its labels or its grey background.
+- Image 2 (car sheet) → the orange coupe: exact paint, wing, lip, grille, headlights and wheels.
+- Image 3 (garage) → environment style reference, not the exact environment: timber stud walls with OSB panels, exposed roof joists, Japanese tuning banners, pegboard tool wall, red wall cabinets, shelving with tyres, aluminium ladder, oil-stained concrete, the red katakana hatchback. Layout follows Video 1. Lighting is daytime, not night.
+
+The spoken line is in English with clear, readable lip movement; it will be dubbed to Hebrew later.
+
+SCENE BASE (all 15 seconds)
+- One continuous take filmed by a high-speed motion-control robotic camera arm. No cuts. Every angle change is the arm physically travelling through the garage on a smooth arc: S-curve acceleration, motion blur only at peak speed, a firm deceleration and a tiny overshoot-and-settle of a few centimetres at each landing. The camera never clips through the car, the jack stands or the man.
+- The orange coupe sits raised on four red jack stands, tyres just clear of the floor, about 35 cm under the front bumper. The red hatchback is parked behind and to the right. An open red toolbox with coloured tool handles stands on the floor left of the front bumper, a blue socket rail and loose wrenches beside it, a flattened cardboard sheet under the creeper.
+- The roll-up door at the car's nose is open: a quiet residential Japanese street in daytime, slightly overexposed.
+- Light: warm late-morning sun through the doorway at a low diagonal, visible shafts with drifting dust; cool fluorescent tubes as soft fill; a small LED work light under the car spills white light around the creeper.
+- Physics: the creeper is a low padded board on swivelling casters, it rolls with real momentum and friction, his weight presses into it, his feet never slide or float.
+- Audio: garage room tone, distant street ambience (birds, a scooter passing), caster wheels rattling on concrete, ratchet clicks once he is back under the car. No music.
+- Voice: a calm, low, steady male voice, flat even delivery, a little out of breath, light breaths between phrases (placeholder; replaced by a Hebrew dub).
+
+MOMENT 1 (0.0-0.7s) Under the car · EFFECT: floor-level close-up. Camera ~30 cm off the floor beside the front jack stand; he lies on the creeper under the raised front, both hands up on the underside of the bumper, face in the shadow under the car, the car body filling the top of the frame.
+MOMENT 2 (0.7-2.3s) Roll-out · EFFECT: floor-level lateral glide + foreground parallax. He pushes on the bumper lip and rolls out feet first along the floor; casters rattle; the camera glides back with him and settles side-on; the car nose ends top-right of frame, the bright open door and street top-left, his legs leaving frame left. His head ends just past the bumper lip.
+MOMENT 3 (2.3-6.6s) Line to camera · EFFECT: near-locked low angle + ~5% slow push-in. He turns his head to the lens, a little out of breath, a ratchet resting on his stomach under his left hand, and says to camera: "This way everything stays exactly in place, and it just makes it real." Calm, flat, steady delivery, slightly breathless, mouth clearly readable. Right-hand gestures timed to the words: an open palm on "this way", a flat steadying palm on "exactly in place", a small rolling wrist on "makes it real". Breath in before the line, a short exhale and half-smile after. On the last word his right hand grips the bumper lip.
+MOMENT 4 (6.6-7.3s) Roll-back + Arm Move 1 · EFFECT: whip arc + motion blur + overshoot-settle. He pulls himself back under the car, only his legs stay out, knees bent up, feet flat on the floor. The arm sweeps round the front in ~0.45 s and lands low and dead-centre in front of the car, wide.
+MOMENT 5 (7.3-8.6s) Low front-centre · EFFECT: slow push-in. Floor level: the car's face and grille, his bent knees and big white sneakers in the foreground, a small OPEN red toolbox with coloured tool handles sticking up beside his left knee (a portable box, not a big closed chest), the socket rail in front of it, the red hatchback right-behind. The back wall behind the car is closed timber with tuning banners, no opening. Ratchet clicks; his legs rest still.
+MOMENT 6 (8.6-11.0s) Arm Move 2 · EFFECT: rising whip arc (~0.4 s) + overshoot-settle, then slow drift. The arm rises to a high close three-quarter beside the front-left fender, looking down past the headlight at his legs on the cardboard, the open door and the street at the top of frame. At ~9.8 s his right hand reaches out to the toolbox and takes a wrench.
+MOMENT 7 (11.0-12.6s) Arm Move 3 · EFFECT: descending whip arc (~0.4 s) back to low front-centre, slightly lower, slow push-in; ratchet clicks; his legs rest still.
+MOMENT 8 (12.6-15.0s) Arm Move 4 · EFFECT: vertical rising crane (~0.45 s) into a near top-down overhead lock-off: the car's nose at the top of frame, his legs straight down the middle on the cardboard, the open toolbox on the left. A barely visible vignette; natural rectilinear lens, no fisheye distortion, no black circular edge. He keeps working; the clip ends on this frame, nearly still.
+
+EFFECTS INVENTORY — whip arc 4x; overshoot-and-settle 4x; floor-level lateral glide 1x; slow push-in/drift during holds 4x; vertical crane 1x; overhead lock-off 1x; directional motion blur only at peak speed; volumetric sun shafts continuous; under-car LED spill from 6.6 s; lip-synced line 1x; practical sound (casters 2x, ratchet from 7.3 s).
+DENSITY — 0-2.3 medium · 2.3-6.6 LOW (breathing room for the line) · 6.6-8.6 HIGH · 8.6-12.6 medium-high · 12.6-15.0 medium to low, final 2 s nearly still.
+NEVER: no leg kicking, no foot tapping, no knee bouncing (his legs rest still once he is back under the car), no fisheye ring, no cuts, no text or labels on screen, no sheet backgrounds, no extra people, no slow motion, no camera passing through solid objects, no floating feet.</pre></div>
+    </div>
+    <div class="shots c2"><figure><img src="media/refs.jpg" alt="דפי הדמות והמקום" loading="lazy"><figcaption>דפי הדמות, הרכב והמקום</figcaption></figure><figure><img src="media/kolbo.jpg" alt="המסך של קולבו" loading="lazy"><figcaption>הפרומפט בקולבו</figcaption></figure></div>
+  </div>
+</div></section>
+
+<section class="sec"><div class="wrap">
+  <span class="eyebrow">ממה שנשבר לי</span>
+  <h2>מה נשבר, <span class="grad-text">ומה תיקן.</span></h2>
+  <div class="miss"><div><b>האנשים זזו כמו בובות</b><p><span class="x">מה נשבר:</span> בגרסה הראשונה הגוף היה נוקשה, בדיוק כמו בבלנדר.</p><p><span class="ok">מה תיקן:</span> שורה אחת בפרומפט: הבובות הן רק סימון, וכל תנועה טבעית ורכה.</p></div><div><b>המצלמה עברה דרך הרכב</b><p><span class="x">מה נשבר:</span> בבלנדר המצלמה חתכה דרך הפגוש, וסידאנס העתיק את זה.</p><p><span class="ok">מה תיקן:</span> לבקש מ-Claude לבדוק לפני כל רינדור שהמצלמה לא עוברת דרך שום דבר.</p></div><div><b>הפנים לא היו מספיק שלי</b><p><span class="x">מה נשבר:</span> דף דמות לבד לא החזיק את הפנים בכל זווית.</p><p><span class="ok">מה תיקן:</span> להוסיף תמונה אמיתית של הפנים, ולכתוב שהיא קובעת את הפנים ודף הדמות את הבגדים.</p></div></div>
+</div></section>
+
+<section class="final" id="start"><div class="wrap">
+  <span class="eyebrow">עכשיו תורכם</span>
+  <h2>סצנה אחת, <span class="grad-text">ואתם הבמאים.</span></h2>
+  <p class="lead">את הדמויות, המקום והסרטון עשיתי בקולבו. מי שנרשם דרך הקישור שלי מקבל הנחה ברכישה הראשונה של מנוי חודשי:</p>
+  <div class="codes"><span>ORELLEVI50 · 50% לחודש הראשון</span><span>ORELLEVI30 · 30% לשלושה חודשים</span></div>
+  <p class="lead" style="font-size:15px">אשרו עוגיות באתר של קולבו והזינו את הקוד בתשלום.</p>
+  <a class="btn btn-grad" href="https://app.kolbo.ai?via=orellevi" target="_blank" rel="noopener">להתחיל בקולבו</a>
+  <div class="steps3">
+    <div><b>רוצים סרטון כזה לעסק?</b>אני בונה אותו עם המוצר, המקום או הצוות שלכם. <a href="https://orellevi.co.il" target="_blank" rel="noopener">orellevi.co.il</a></div>
+    <div><b>צריכים סרטון AI?</b>פרסומות, קליפים ותוכן לרשתות. שלחו לי הודעה ב<a href="https://www.instagram.com/leviorel/" target="_blank" rel="noopener">אינסטגרם</a>.</div>
+    <div><b>עשיתם אחד?</b>תתייגו את <b>@leviorel</b>, אני רוצה לראות.</div>
+  </div>
+</div></section>
+
+<section class="follow" id="follow"><div class="wrap"><h2>עקבו אחריי</h2><p>כל שבוע ווקפלואו חדש של AI. בחרו איפה:</p><div class="fgrid"><a class="fbtn instagram" href="https://www.instagram.com/leviorel/" target="_blank" rel="noopener"><span class="ic"><i class="fa-brands fa-instagram"></i></span><span><b>Instagram</b><small>@leviorel</small></span></a><a class="fbtn tiktok" href="https://www.tiktok.com/@leviorel.ai" target="_blank" rel="noopener"><span class="ic"><i class="fa-brands fa-tiktok"></i></span><span><b>TikTok</b><small>@leviorel.ai</small></span></a><a class="fbtn youtube" href="https://www.youtube.com/@leviorel" target="_blank" rel="noopener"><span class="ic"><i class="fa-brands fa-youtube"></i></span><span><b>YouTube</b><small>@leviorel</small></span></a><a class="fbtn facebook" href="https://www.facebook.com/1158309557375837" target="_blank" rel="noopener"><span class="ic"><i class="fa-brands fa-facebook-f"></i></span><span><b>Facebook</b><small>Orel Levi AI Creator</small></span></a><a class="fbtn linkedin" href="https://www.linkedin.com/in/leviorel/" target="_blank" rel="noopener"><span class="ic"><i class="fa-brands fa-linkedin-in"></i></span><span><b>LinkedIn</b><small>Orel Levi</small></span></a></div></div></section>
+<footer><div class="wrap"><span>אוראל לוי · <a href="https://www.instagram.com/leviorel/" target="_blank" rel="noopener">@leviorel</a> · <a href="https://orellevi.co.il" target="_blank" rel="noopener">orellevi.co.il</a></span><span>בלנדר + קולבו · Made with Kolbo AI</span></div></footer>
+<div class="toast" id="toast">הועתק</div>
+<script>
+const toast=document.getElementById('toast');let tt;
+function flash(msg){toast.textContent=msg;toast.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>toast.classList.remove('on'),1600)}
+async function copyText(t){try{await navigator.clipboard.writeText(t);return true}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand('copy')}catch(_){}a.remove();return ok}}
+document.querySelectorAll('.copy').forEach(b=>b.addEventListener('click',async()=>{const ok=await copyText(document.getElementById(b.dataset.copy).textContent);b.textContent=ok?'הועתק':'סמנו והעתיקו';b.classList.toggle('done',ok);flash(ok?'הפרומפט הועתק':'סמנו את הטקסט');setTimeout(()=>{b.textContent='העתקה';b.classList.remove('done')},1800)}));
+const v=document.getElementById('ep'),s=document.getElementById('snd');
+s.addEventListener('click',()=>{v.muted=!v.muted;if(!v.muted){v.currentTime=0;v.play()}s.textContent=v.muted?'לחצו לסאונד':'הסאונד פועל'});
+</script>
+</body>
+</html>
